@@ -39,6 +39,8 @@ public class InvokerInvocationHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
         Class<?>[] parameterTypes = method.getParameterTypes();
+        //ethod.getDeclaringClass()获取声明的类
+        //wait() #notify()
         if (method.getDeclaringClass() == Object.class) {
             return method.invoke(invoker, args);
         }

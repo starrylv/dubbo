@@ -28,7 +28,7 @@ import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.StringUtils;
 
 /**
- * Code generator for Adaptive class
+ * Code generator for adaptive class
  */
 public class AdaptiveClassCodeGenerator {
 

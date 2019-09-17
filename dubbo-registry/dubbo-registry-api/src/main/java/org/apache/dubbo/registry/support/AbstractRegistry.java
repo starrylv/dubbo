@@ -325,6 +325,10 @@ public abstract class AbstractRegistry implements Registry {
         }
     }
 
+    /**
+     * 恢复注册订阅
+     * @throws Exception
+     */
     protected void recover() throws Exception {
         // register
         Set<URL> recoverRegistered = new HashSet<>(getRegistered());

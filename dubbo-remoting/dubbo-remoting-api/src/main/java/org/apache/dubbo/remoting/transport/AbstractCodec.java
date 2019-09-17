@@ -41,6 +41,12 @@ public abstract class AbstractCodec implements Codec2 {
 
     private static final String SERVER_SIDE = "server";
 
+    /**
+     * 检查负载长度是否符合协议规范
+     * @param channel
+     * @param size
+     * @throws IOException
+     */
     protected static void checkPayload(Channel channel, long size) throws IOException {
         int payload = Constants.DEFAULT_PAYLOAD;
         if (channel != null && channel.getUrl() != null) {
@@ -57,6 +63,7 @@ public abstract class AbstractCodec implements Codec2 {
     protected Serialization getSerialization(Channel channel) {
         return CodecSupport.getSerialization(channel.getUrl());
     }
+
 
     protected boolean isClientSide(Channel channel) {
         String side = (String)channel.getAttribute(SIDE_KEY);

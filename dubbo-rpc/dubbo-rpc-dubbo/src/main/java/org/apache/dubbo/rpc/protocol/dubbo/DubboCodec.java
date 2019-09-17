@@ -86,11 +86,13 @@ public class DubboCodec extends ExchangeCodec {
                         data = decodeEventData(channel, in);
                     } else {
                         DecodeableRpcResult result;
+                        // 在通信框架（例如，Netty）的 IO 线程，解码
                         if (channel.getUrl().getParameter(DECODE_IN_IO_THREAD_KEY, DEFAULT_DECODE_IN_IO_THREAD)) {
                             result = new DecodeableRpcResult(channel, res, is,
                                     (Invocation) getRequestData(id), proto);
                             result.decode();
                         } else {
+                            // 在 Dubbo ThreadPool 线程，解码，使用 DecodeHandler
                             result = new DecodeableRpcResult(channel, res,
                                     new UnsafeByteArrayInputStream(readMessageData(is)),
                                     (Invocation) getRequestData(id), proto);

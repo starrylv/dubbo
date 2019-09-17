@@ -92,6 +92,9 @@ class URL implements Serializable {
 
     private static final long serialVersionUID = -1985165475234910535L;
 
+    /**
+     * 协议
+     */
     private final String protocol;
 
     private final String username;

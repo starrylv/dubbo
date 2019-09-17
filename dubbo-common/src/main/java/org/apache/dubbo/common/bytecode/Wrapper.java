@@ -33,6 +33,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 
 /**
+ *  Wrapper这个类可以理解为一堆if...else...，根据声明的接口类，预生成一批分发逻辑进行缓存。
+ *  比反射用起来更为灵活，
+ *  但是也因为是动态生成的类，所以更为复杂。针对接口进行自适应实现，可以作为一种热更新的手段。
  * Wrapper.
  */
 public abstract class Wrapper {

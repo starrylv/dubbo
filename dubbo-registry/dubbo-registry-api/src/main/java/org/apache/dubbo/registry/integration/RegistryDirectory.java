@@ -85,9 +85,13 @@ import static org.apache.dubbo.rpc.cluster.Constants.ROUTER_KEY;
 
 /**
  * RegistryDirectory
+ * 基于注册中心的动态 Directory 实现类，从命名上看出它是动态的，会根据注册中心的推送变更 List<Invoker>
  */
 public class RegistryDirectory<T> extends AbstractDirectory<T> implements NotifyListener {
 
+    /**
+     * Cluster$Adaptive 对象
+     */
     private static final Logger logger = LoggerFactory.getLogger(RegistryDirectory.class);
 
     private static final Cluster CLUSTER = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();
@@ -268,6 +272,14 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             if (invokerUrls == Collections.<URL>emptyList()) {
                 invokerUrls = new ArrayList<>();
             }
+
+            /**
+             * 如果invokerUrls为空，并且已缓存的invokerUrls不为空，
+             * 将缓存中的invoker url复制到invokerUrls中，这里可以说明如果providers目录未发送变化，
+             * invokerUrls则为空，表示使用上次缓存的服务提供者URL对应的invoker；
+             * 如果invokerUrls不为空，则用iinvokerUrls中的值替换原缓存的invokerUrls，这里说明，如果providers发生变化，
+             * invokerUrls中会包含此时注册中心所有的服务提供者。如果invokerUrls为空，则无需处理，结束本次更新服务提供者Invoker操作
+             */
             if (invokerUrls.isEmpty() && this.cachedInvokerUrls != null) {
                 invokerUrls.addAll(this.cachedInvokerUrls);
             } else {
@@ -277,6 +289,7 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             if (invokerUrls.isEmpty()) {
                 return;
             }
+            //将invokerUrls转换为对应的Invoke
             Map<String, Invoker<T>> newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map
 
             /**
@@ -301,7 +314,9 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
             this.urlInvokerMap = newUrlInvokerMap;
 
             try {
-                destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap); // Close the unused Invoker
+                // Close the unused Invoker
+                //旧map中的invoker如果不在新map中则destroy
+                destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap);
             } catch (Exception e) {
                 logger.warn("destroyUnusedInvokers error. ", e);
             }
@@ -371,10 +386,13 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      */
     private Map<String, Invoker<T>> toInvokers(List<URL> urls) {
         Map<String, Invoker<T>> newUrlInvokerMap = new HashMap<>();
+        //为空直接返回
         if (urls == null || urls.isEmpty()) {
             return newUrlInvokerMap;
         }
         Set<String> keys = new HashSet<>();
+
+        //获取消息消费者URL中的协议类型，< dubbo:reference protocol="" …/>属性值，然后遍历所有的Invoker Url(服务提供者URL)。
         String queryProtocols = this.queryMap.get(PROTOCOL_KEY);
         for (URL providerUrl : urls) {
             // If protocol is configured at the reference side, only the matching protocol is selected
@@ -443,10 +461,12 @@ public class RegistryDirectory<T> extends AbstractDirectory<T> implements Notify
      * @return
      */
     private URL mergeUrl(URL providerUrl) {
+        //consumer端属性覆盖provider端
         providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // Merge the consumer side parameters
-
+        //合并configuratorUrls 中的属性，我们现在应该知道，
+        // dubbo可以在监控中心或管理端(dubbo-admin)覆盖覆盖服务提供者的属性，其使用协议为override
         providerUrl = overrideWithConfigurator(providerUrl);
-
+        //为服务提供者URL增加check=false，默认只有在服务调用时才检查服务提供者是否可用
         providerUrl = providerUrl.addParameter(Constants.CHECK_KEY, String.valueOf(false)); // Do not check whether the connection is successful or not, always create Invoker!
 
         // The combination of directoryUrl and override is at the end of notify, which can't be handled here

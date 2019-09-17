@@ -43,17 +43,22 @@ import java.io.InputStream;
 
 /**
  * ExchangeCodec.
+ *
  */
 public class ExchangeCodec extends TelnetCodec {
 
     // header length.
+    //协议头部长度，共16个字节
     protected static final int HEADER_LENGTH = 16;
     // magic header.
+    //魔数，固定为0xdabb，2个字节
     protected static final short MAGIC = (short) 0xdabb;
     protected static final byte MAGIC_HIGH = Bytes.short2bytes(MAGIC)[0];
     protected static final byte MAGIC_LOW = Bytes.short2bytes(MAGIC)[1];
     // message flag.
+    //一个字节的消息标志位，用来表示消息是request还是//response,twoway还是oneway,是心跳还是正常请求以及采用//的序列化反序列化协议
     protected static final byte FLAG_REQUEST = (byte) 0x80;
+
     protected static final byte FLAG_TWOWAY = (byte) 0x40;
     protected static final byte FLAG_EVENT = (byte) 0x20;
     protected static final int SERIALIZATION_MASK = 0x1f;
@@ -66,8 +71,10 @@ public class ExchangeCodec extends TelnetCodec {
     @Override
     public void encode(Channel channel, ChannelBuffer buffer, Object msg) throws IOException {
         if (msg instanceof Request) {
+            //请求
             encodeRequest(channel, buffer, (Request) msg);
         } else if (msg instanceof Response) {
+            //响应
             encodeResponse(channel, buffer, (Response) msg);
         } else {
             super.encode(channel, buffer, msg);
@@ -76,7 +83,9 @@ public class ExchangeCodec extends TelnetCodec {
 
     @Override
     public Object decode(Channel channel, ChannelBuffer buffer) throws IOException {
+        //获取可读字节数this.writerIndex - this.readerIndex
         int readable = buffer.readableBytes();
+        //创建最大长度为16的byte数组
         byte[] header = new byte[Math.min(readable, HEADER_LENGTH)];
         buffer.readBytes(header);
         return decode(channel, buffer, readable, header);
@@ -85,6 +94,7 @@ public class ExchangeCodec extends TelnetCodec {
     @Override
     protected Object decode(Channel channel, ChannelBuffer buffer, int readable, byte[] header) throws IOException {
         // check magic number.
+        //不是dubbo协议调用父类decode
         if (readable > 0 && header[0] != MAGIC_HIGH
                 || readable > 1 && header[1] != MAGIC_LOW) {
             int length = header.length;
@@ -102,11 +112,13 @@ public class ExchangeCodec extends TelnetCodec {
             return super.decode(channel, buffer, readable, header);
         }
         // check length.
+        //是dubbo协议
+        //可读字节数小于16，返回NEED_MORE_INPUT
         if (readable < HEADER_LENGTH) {
             return DecodeResult.NEED_MORE_INPUT;
         }
 
-        // get data length.
+        // 获取body大小
         int len = Bytes.bytes2int(header, 12);
         checkPayload(channel, len);
 
@@ -148,12 +160,16 @@ public class ExchangeCodec extends TelnetCodec {
             byte status = header[3];
             res.setStatus(status);
             try {
+                //反序列化
                 ObjectInput in = CodecSupport.deserialize(channel.getUrl(), is, proto);
                 if (status == Response.OK) {
                     Object data;
+                    //心跳
                     if (res.isHeartbeat()) {
                         data = decodeHeartbeatData(channel, in);
+
                     } else if (res.isEvent()) {
+                        //事件
                         data = decodeEventData(channel, in);
                     } else {
                         data = decodeResponseData(channel, in, getRequestData(id));
@@ -233,8 +249,10 @@ public class ExchangeCodec extends TelnetCodec {
         ChannelBufferOutputStream bos = new ChannelBufferOutputStream(buffer);
         ObjectOutput out = serialization.serialize(channel.getUrl(), bos);
         if (req.isEvent()) {
+            //编码事件数据
             encodeEventData(channel, out, req.getData());
         } else {
+            //编码请求数据
             encodeRequestData(channel, out, req.getData(), req.getVersion());
         }
         out.flushBuffer();
@@ -244,6 +262,7 @@ public class ExchangeCodec extends TelnetCodec {
         bos.flush();
         bos.close();
         int len = bos.writtenBytes();
+        //检查数据大小
         checkPayload(channel, len);
         Bytes.int2bytes(len, header, 12);
 

@@ -110,10 +110,10 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
      * the selected invoker has the minimum chance to be one in the previously selected list, and also
      * guarantees this invoker is available.
      *
-     * @param loadbalance load balance policy
+     * @param loadbalance load balance policy Loadbalance 对象，提供负责均衡策略
      * @param invocation  invocation
      * @param invokers    invoker candidates
-     * @param selected    exclude selected invokers or not
+     * @param selected    exclude selected invokers or not 已选过的 Invoker 集合. 注意：输入保证不重复
      * @return the invoker which will final to do invoke.
      * @throws RpcException exception
      */
@@ -123,8 +123,10 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         if (CollectionUtils.isEmpty(invokers)) {
             return null;
         }
+
         String methodName = invocation == null ? StringUtils.EMPTY : invocation.getMethodName();
 
+        //是否开启粘滞连接的特性
         boolean sticky = invokers.get(0).getUrl()
                 .getMethodParameter(methodName, CLUSTER_STICKY_KEY, DEFAULT_CLUSTER_STICKY);
 
@@ -153,9 +155,11 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
         if (CollectionUtils.isEmpty(invokers)) {
             return null;
         }
+        //size为1则取固定一个
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
+        //选取invoker
         Invoker<T> invoker = loadbalance.select(invokers, getUrl(), invocation);
 
         //If the `invoker` is in the  `selected` or invoker is unavailable && availablecheck is true, reselect.
@@ -276,6 +280,12 @@ public abstract class AbstractClusterInvoker<T> implements Invoker<T> {
     protected abstract Result doInvoke(Invocation invocation, List<Invoker<T>> invokers,
                                        LoadBalance loadbalance) throws RpcException;
 
+    /**
+     * 获得所有服务提供者 Invoker 集合
+     * @param invocation
+     * @return
+     * @throws RpcException
+     */
     protected List<Invoker<T>> list(Invocation invocation) throws RpcException {
         return directory.list(invocation);
     }
