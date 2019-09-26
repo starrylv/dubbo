@@ -44,6 +44,7 @@ import static org.apache.dubbo.rpc.Constants.STUB_EVENT_METHODS_KEY;
 
 /**
  * StubProxyFactoryWrapper
+ * 代理工厂proxyfactory的装饰者类
  */
 public class StubProxyFactoryWrapper implements ProxyFactory {
 

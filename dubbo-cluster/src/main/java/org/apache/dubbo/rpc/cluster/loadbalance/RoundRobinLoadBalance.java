@@ -32,6 +32,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Round robin load balance.
+ *
+ *
+ *
+ *
+ *
  */
 public class RoundRobinLoadBalance extends AbstractLoadBalance {
     public static final String NAME = "roundrobin";
@@ -100,24 +105,30 @@ public class RoundRobinLoadBalance extends AbstractLoadBalance {
         for (Invoker<T> invoker : invokers) {
             String identifyString = invoker.getUrl().toIdentityString();
             WeightedRoundRobin weightedRoundRobin = map.get(identifyString);
+            //获取invoker权重
             int weight = getWeight(invoker, invocation);
-
+            //如果weightedRoundRobin为空则初始化
             if (weightedRoundRobin == null) {
                 weightedRoundRobin = new WeightedRoundRobin();
                 weightedRoundRobin.setWeight(weight);
                 map.putIfAbsent(identifyString, weightedRoundRobin);
             }
+            //和缓存的不一样，则更新缓存的weight
             if (weight != weightedRoundRobin.getWeight()) {
                 //weight changed
                 weightedRoundRobin.setWeight(weight);
             }
+            //weightedRoundRobin.current = weightedRoundRobin.weight + weightedRoundRobin.current
             long cur = weightedRoundRobin.increaseCurrent();
+
             weightedRoundRobin.setLastUpdate(now);
+            //选取最大的
             if (cur > maxCurrent) {
                 maxCurrent = cur;
                 selectedInvoker = invoker;
                 selectedWRR = weightedRoundRobin;
             }
+            //计算总权重
             totalWeight += weight;
         }
         if (!updateLock.get() && invokers.size() != map.size()) {
@@ -140,6 +151,7 @@ public class RoundRobinLoadBalance extends AbstractLoadBalance {
             }
         }
         if (selectedInvoker != null) {
+            //weightedRoundRobin.current = weightedRoundRobin.current - totalWeight
             selectedWRR.sel(totalWeight);
             return selectedInvoker;
         }

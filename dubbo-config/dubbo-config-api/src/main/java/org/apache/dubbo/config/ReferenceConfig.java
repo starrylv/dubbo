@@ -331,6 +331,7 @@ public class ReferenceConfig<T> extends AbstractReferenceConfig {
         //创建代理
         ref = createProxy(map);
 
+
         String serviceKey = URL.buildKey(interfaceName, group, version);
         ApplicationModel.initConsumerModel(serviceKey, buildConsumerModel(serviceKey, attributes));
         //初始化标记，防止重复创建对象

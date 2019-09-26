@@ -16,17 +16,14 @@
  */
 package org.apache.dubbo.config.spring.schema;
 
-import org.apache.dubbo.config.ApplicationConfig;
-import org.apache.dubbo.config.ModuleConfig;
-import org.apache.dubbo.config.MonitorConfig;
-import org.apache.dubbo.config.ProtocolConfig;
-import org.apache.dubbo.config.ProviderConfig;
+import org.apache.dubbo.config.*;
 import org.apache.dubbo.config.context.ConfigManager;
 import org.apache.dubbo.config.spring.ConfigTest;
 import org.apache.dubbo.config.spring.ServiceBean;
 import org.apache.dubbo.config.spring.api.DemoService;
 import org.apache.dubbo.config.spring.impl.DemoServiceImpl;
 
+import org.apache.dubbo.registry.Registry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,8 +51,13 @@ public class DubboNamespaceHandlerTest {
 
     @Test
     public void testProviderXml() {
-        ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(ConfigTest.class.getPackage().getName().replace('.', '/') + "/demo-provider.xml");
+        String path = ConfigTest.class.getPackage().getName().replace('.', '/') + "/demo-provider.xml";
+        ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext(path);
         ctx.start();
+
+        RegistryConfig registryConfig = ctx.getBean(RegistryConfig.class);
+
+        String protocol = registryConfig.getProtocol();
 
         ProtocolConfig protocolConfig = ctx.getBean(ProtocolConfig.class);
         assertThat(protocolConfig, not(nullValue()));

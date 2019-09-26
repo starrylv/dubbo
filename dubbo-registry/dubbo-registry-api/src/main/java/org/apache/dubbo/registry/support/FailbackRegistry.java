@@ -288,10 +288,13 @@ public abstract class FailbackRegistry extends AbstractRegistry {
 
     @Override
     public void subscribe(URL url, NotifyListener listener) {
+        //加入到subscribed中 ConcurrentMap<URL, Set<NotifyListener>>
         super.subscribe(url, listener);
         removeFailedSubscribed(url, listener);
         try {
             // Sending a subscription request to the server side
+
+            //执行订阅
             doSubscribe(url, listener);
         } catch (Exception e) {
             Throwable t = e;
@@ -301,6 +304,7 @@ public abstract class FailbackRegistry extends AbstractRegistry {
                 notify(url, listener, urls);
                 logger.error("Failed to subscribe " + url + ", Using cached list: " + urls + " from cache file: " + getUrl().getParameter(FILE_KEY, System.getProperty("user.home") + "/dubbo-registry-" + url.getHost() + ".cache") + ", cause: " + t.getMessage(), t);
             } else {
+                //开启检查直接报错
                 // If the startup detection is opened, the Exception is thrown directly.
                 boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)
                         && url.getParameter(Constants.CHECK_KEY, true);
