@@ -453,10 +453,10 @@ public class ServiceConfig<T> extends AbstractServiceConfig {
     private void doExportUrls() {
         //获取注册中心列表
         List<URL> registryURLs = loadRegistries(true);
+        // 循环 `protocols` ，向逐个注册中心分组暴露服务。
         for (ProtocolConfig protocolConfig : protocols) {
             String pathKey = URL.buildKey(getContextPath(protocolConfig).map(p -> p + "/" + path).orElse(path), group, version);ProviderModel providerModel = new ProviderModel(pathKey, ref, interfaceClass);
             ApplicationModel.initProviderModel(pathKey, providerModel);
-            //分协议导出注册中心
             doExportUrlsFor1Protocol(protocolConfig, registryURLs);
         }
     }

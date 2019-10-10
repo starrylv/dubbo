@@ -117,12 +117,31 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
 
     @Override
     @SuppressWarnings({"unchecked", "deprecation"})
+    /**
+     * 这个方法将在所有的属性被初始化后调用。
+     *
+     * 但是会在init前调用。
+     *
+     * 但是主要的是如果是延迟加载的话，则马上执行。
+     *
+     * 所以可以在类上加上注解：
+     *
+     * import org.springframework.context.annotation.Lazy;
+     *
+     * @Lazy(false)
+     *
+     * 这样spring容器初始化的时候afterPropertiesSet就会被调用。
+     *
+     * 只需要实现InitializingBean接口就行
+     */
     public void afterPropertiesSet() throws Exception {
         if (getProvider() == null) {
             //返回指定类型和子类型的所有bean，若该bean factory 是一个继承类型的beanFactory，这个方法也会获取祖宗factory中定义的指定类型的bean。
             Map<String, ProviderConfig> providerConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProviderConfig.class, false, false);
             if (providerConfigMap != null && providerConfigMap.size() > 0) {
+
                 Map<String, ProtocolConfig> protocolConfigMap = applicationContext == null ? null : BeanFactoryUtils.beansOfTypeIncludingAncestors(applicationContext, ProtocolConfig.class, false, false);
+
                 if (CollectionUtils.isEmptyMap(protocolConfigMap)
                         && providerConfigMap.size() > 1) { // backward compatibility
                     List<ProviderConfig> providerConfigs = new ArrayList<ProviderConfig>();
@@ -162,6 +181,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                     applicationConfig = config;
                 }
                 if (applicationConfig != null) {
+
                     setApplication(applicationConfig);
                 }
             }
@@ -216,6 +236,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                     }
                 }
                 if (!registryConfigs.isEmpty()) {
+                    //配置registries export的时候会loadRegistries
                     super.setRegistries(registryConfigs);
                 }
             }
@@ -303,6 +324,7 @@ public class ServiceBean<T> extends ServiceConfig<T> implements InitializingBean
                 }
 
                 if (!protocolConfigs.isEmpty()) {
+                    //设置protocols doExportUrls时用到
                     super.setProtocols(protocolConfigs);
                 }
             }

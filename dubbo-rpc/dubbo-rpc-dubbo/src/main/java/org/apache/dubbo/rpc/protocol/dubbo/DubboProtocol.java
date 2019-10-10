@@ -410,6 +410,7 @@ public class DubboProtocol extends AbstractProtocol {
 
     @Override
     public <T> Invoker<T> protocolBindingRefer(Class<T> serviceType, URL url) throws RpcException {
+
         optimizeSerialization(url);
 
         // create rpc invoker.

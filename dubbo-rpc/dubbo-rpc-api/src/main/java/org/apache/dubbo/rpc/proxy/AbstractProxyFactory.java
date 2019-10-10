@@ -38,7 +38,7 @@ public abstract class AbstractProxyFactory implements ProxyFactory {
     }
 
     @Override
-    public <T> T getProxy(Invoker<T> invoker, boolean generic) throws RpcException {
+    public <T> T     getProxy(Invoker<T> invoker, boolean generic) throws RpcException {
         Class<?>[] interfaces = null;
         String config = invoker.getUrl().getParameter(INTERFACES);
         if (config != null && config.length() > 0) {

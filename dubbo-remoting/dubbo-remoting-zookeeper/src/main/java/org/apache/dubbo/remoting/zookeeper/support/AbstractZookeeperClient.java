@@ -61,13 +61,17 @@ public abstract class AbstractZookeeperClient<TargetDataListener, TargetChildLis
                 return;
             }
         }
+
         int i = path.lastIndexOf('/');
         if (i > 0) {
             create(path.substring(0, i), false);
         }
+
         if (ephemeral) {
+            //创建临时节点
             createEphemeral(path);
         } else {
+            //创建持久节点
             createPersistent(path);
         }
     }

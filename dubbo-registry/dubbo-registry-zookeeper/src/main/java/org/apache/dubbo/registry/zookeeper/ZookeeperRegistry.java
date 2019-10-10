@@ -130,18 +130,22 @@ public class ZookeeperRegistry extends FailbackRegistry {
     @Override
     public void doSubscribe(final URL url, final NotifyListener listener) {
         try {
+            //处理所有 Service 层的发起订阅，例如监控中心的订阅
             if (ANY_VALUE.equals(url.getServiceInterface())) {
                 String root = toRootPath();
+                //获取监听器集合
                 ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                 if (listeners == null) {
                     zkListeners.putIfAbsent(url, new ConcurrentHashMap<>());
                     listeners = zkListeners.get(url);
                 }
+                // 获得 ChildListener 对象
                 ChildListener zkListener = listeners.get(listener);
                 if (zkListener == null) {
                     listeners.putIfAbsent(listener, (parentPath, currentChilds) -> {
                         for (String child : currentChilds) {
                             child = URL.decode(child);
+                            // 新增 Service 接口全名时（即新增服务），发起该 Service 层的订阅
                             if (!anyServices.contains(child)) {
                                 anyServices.add(child);
                                 subscribe(url.setPath(child).addParameters(INTERFACE_KEY, child,
@@ -151,8 +155,12 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     });
                     zkListener = listeners.get(listener);
                 }
+                //创建持久节点
                 zkClient.create(root, false);
+                // 向 Zookeeper ，Service 节点，发起订阅
                 List<String> services = zkClient.addChildListener(root, zkListener);
+
+                // 首次全量数据获取完成时，循环 Service 接口全名数组，发起该 Service 层的订阅
                 if (CollectionUtils.isNotEmpty(services)) {
                     for (String service : services) {
                         service = URL.decode(service);
@@ -162,13 +170,24 @@ public class ZookeeperRegistry extends FailbackRegistry {
                     }
                 }
             } else {
+                // 处理指定 Service 层的发起订阅，例如服务消费者的订阅
                 List<URL> urls = new ArrayList<>();
+                // path值
+                // /dubbo/org.apache.dubbo.demo.DemoService/providers
+                // /dubbo/org.apache.dubbo.demo.DemoService/configurators
+                // /dubbo/org.apache.dubbo.demo.DemoService/routers
                 for (String path : toCategoriesPath(url)) {
                     ConcurrentMap<NotifyListener, ChildListener> listeners = zkListeners.get(url);
                     if (listeners == null) {
                         zkListeners.putIfAbsent(url, new ConcurrentHashMap<>());
                         listeners = zkListeners.get(url);
                     }
+                    /**
+                     * 在 URL 层发生变更时，会调用 NotifyListener#notify(url, listener, currentChilds) 方法，
+                     * 回调 NotifyListener 的逻辑。
+                     * 酱紫，如果 Service 下增加新的服务提供者实例( 新的 URL )，
+                     * 服务消费者可创建新的 Invoker 对象，用于调用该服务提供者。
+                     */
                     ChildListener zkListener = listeners.get(listener);
                     if (zkListener == null) {
                         listeners.putIfAbsent(listener,
@@ -182,6 +201,8 @@ public class ZookeeperRegistry extends FailbackRegistry {
                         urls.addAll(toUrlsWithEmpty(url, path, children));
                     }
                 }
+                //首次全量数据获取完成时，调用 NotifyListener#notify(url, listener, currentChilds) 方法，
+                // 回调 NotifyListener 的逻辑。酱紫，服务消费者可创建所有的 Invoker 对象，用于调用服务提供者们。
                 notify(url, listener, urls);
             }
         } catch (Throwable e) {
@@ -283,6 +304,16 @@ public class ZookeeperRegistry extends FailbackRegistry {
         return urls;
     }
 
+    /**
+     * 获得 providers 中，和 consumer 匹配的 URL 数组
+     *
+     * 若不存在匹配，则创建 `empty://` 的 URL返回。通过这样的方式，可以处理类似服务提供者为空的情况。
+     *
+     * @param consumer 用于匹配 URL
+     * @param path 被匹配的 URL 的字符串
+     * @param providers 匹配的 URL 数组
+     * @return 匹配的 URL 数组
+     */
     private List<URL> toUrlsWithEmpty(URL consumer, String path, List<String> providers) {
         List<URL> urls = toUrlsWithoutEmpty(consumer, providers);
         if (urls == null || urls.isEmpty()) {
