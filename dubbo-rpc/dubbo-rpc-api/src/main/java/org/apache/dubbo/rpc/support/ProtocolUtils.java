@@ -72,6 +72,7 @@ public class ProtocolUtils {
     }
 
     public static boolean isBeanGenericSerialization(String generic) {
+        isGeneric(generic)
         return isGeneric(generic) && GENERIC_SERIALIZATION_BEAN.equals(generic);
     }
 

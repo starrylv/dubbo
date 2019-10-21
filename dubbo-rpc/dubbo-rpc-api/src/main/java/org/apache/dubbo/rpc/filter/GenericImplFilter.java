@@ -60,7 +60,9 @@ public class GenericImplFilter extends ListenableFilter {
 
     @Override
     public Result invoke(Invoker<?> invoker, Invocation invocation) throws RpcException {
+        // 获得 `generic` 配置项
         String generic = invoker.getUrl().getParameter(GENERIC_KEY);
+
         if (ProtocolUtils.isGeneric(generic)
                 && (!$INVOKE.equals(invocation.getMethodName()) && !$INVOKE_ASYNC.equals(invocation.getMethodName()))
                 && invocation instanceof RpcInvocation) {
@@ -74,6 +76,15 @@ public class GenericImplFilter extends ListenableFilter {
                 types[i] = ReflectUtils.getName(parameterTypes[i]);
             }
 
+            /**
+             * generic 配置项，默认为 false ，不使用配置项。目前有三种配置项的值，开启泛化引用的功能：
+             * generic=true ，使用 com.alibaba.dubbo.common.utils.PojoUtils ，实现 POJO <=> Map 的互转。
+             * generic=nativejava ，使用 com.alibaba.dubbo.common.serialize.support.nativejava.NativeJavaSerialization
+             * ，实现 POJO <=> byte[] 的互转。
+             * generic=bean ，使用 com.alibaba.dubbo.common.beanutil.JavaBeanSerializeUtil ，实现 POJO <=>
+             *     JavaBeanDescriptor 的互转。
+             * 总的来说，三种方式的差异，在于使用互转( 序列化和反序列化 )的方式不同。未来如果我们有需要，完成可以实现 generic=json ，使用 FastJSON 来序列化和反序列化。
+             */
             Object[] args;
             if (ProtocolUtils.isBeanGenericSerialization(generic)) {
                 args = new Object[arguments.length];
@@ -112,7 +123,7 @@ public class GenericImplFilter extends ListenableFilter {
                     }
                 }
             }
-
+            // 通过隐式参数，传递 `generic` 配置项
             invocation.setAttachment(
                     GENERIC_KEY, invoker.getUrl().getParameter(GENERIC_KEY));
         }

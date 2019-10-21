@@ -138,6 +138,7 @@ public class GenericFilter extends ListenableFilter {
                                         args[0].getClass().getName());
                     }
                 }
+                //方法调用
                 return invoker.invoke(new RpcInvocation(method, args, inv.getAttachments()));
             } catch (NoSuchMethodException e) {
                 throw new RpcException(e.getMessage(), e);
@@ -162,9 +163,11 @@ public class GenericFilter extends ListenableFilter {
                     generic = RpcContext.getContext().getAttachment(GENERIC_KEY);
                 }
 
+                //若是异常结果，并且非 GenericException 异常，则使用 GenericException 包装
                 if (appResponse.hasException() && !(appResponse.getException() instanceof GenericException)) {
                     appResponse.setException(new GenericException(appResponse.getException()));
                 }
+
                 if (ProtocolUtils.isJavaGenericSerialization(generic)) {
                     try {
                         UnsafeByteArrayOutputStream os = new UnsafeByteArrayOutputStream(512);

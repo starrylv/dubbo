@@ -96,6 +96,9 @@ public class ReferenceConfigTest {
         rc.setRegistry(registry);
         rc.setInterface(DemoService.class.getName());
 
+        //泛化调用
+        rc.setGeneric("true");
+
         boolean success = false;
         DemoService demoService = null;
         try {
